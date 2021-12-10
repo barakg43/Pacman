@@ -7,11 +7,10 @@
 #include <fstream>
 #include "Point.h"
 
-
+#include <vector>
 using std::cout;
 using std::cin;
 using std::istream;
-
 
 
 class GameBoard
@@ -23,6 +22,7 @@ public:
 	
 	Point pacmanInitPos;
 private:
+	vector<string> screenFileNames;
 	enum { MAX_GHOSTS = 4 };
 	Point ghostsInitPos[MAX_GHOSTS]; //not use Game::GHOSTS::MAX_GHOSTS to avoid cyclic dependency
 	static Point legendPos;
@@ -32,6 +32,7 @@ private:
 	int ghost_num = 0;
 	
 public:
+	void getAllScreenFile();
 	// Constructors
 	GameBoard();
 	void getGhostsPos(Point*& pos, int& size);

@@ -4,7 +4,10 @@
 #include "Game.h"
 #include "Point.h"
 #include <string.h>
+#include <filesystem>
 
+using std::filesystem::directory_iterator;
+using std::filesystem::path;
 
 // Constructors
 
@@ -65,6 +68,23 @@ void GameBoard::getGhostsPos(Point*& pos, int& size)
 {
 	pos = ghostsInitPos;
 	size = ghost_num;
+}
+
+
+void GameBoard::getAllScreenFile()
+{
+
+
+	string workingDirectory = std::filesystem::current_path().string();
+	cout << workingDirectory;
+	for (const auto& entry : directory_iterator(std::filesystem::current_path()))
+	{
+		string fileExtension = entry.path().filename().extension().string();
+		if(fileExtension==".screen")
+			cout << entry.path().filename().string() << endl;
+	}
+		
+
 }
 void GameBoard::print()
 {
@@ -146,6 +166,7 @@ void GameBoard::clearLegendAera()
 
 void GameBoard::loadBoardFromFile(string fileName)
 {
+	getAllScreenFile();
 	width = height = 0;
 	initBoard();
 	ifstream boardFile(fileName);

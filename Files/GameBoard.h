@@ -6,12 +6,12 @@
 #include "io_utils.h"
 #include <fstream>
 #include "Point.h"
-
-#include <vector>
+#include <list>
+#include <iterator>
 using std::cout;
 using std::cin;
 using std::istream;
-
+using std::list;
 
 class GameBoard
 {
@@ -22,16 +22,20 @@ public:
 	
 	Point pacmanInitPos;
 private:
-	vector<string> screenFileNames;
+	const string SCREEN_FILE_EXT = ".screen";
 	enum { MAX_GHOSTS = 4 };
 	Point ghostsInitPos[MAX_GHOSTS]; //not use Game::GHOSTS::MAX_GHOSTS to avoid cyclic dependency
 	static Point legendPos;
 	static int width, height;
-	int numOfBreadCrumbs = 0;//to count how many breadcrumbs 'fillBreadCrumbs()' create
+	int sumBreadCrumbsInBoard = 0;//to count how many breadcrumbs 'fillBreadCrumbs()' create
+	int sumBreadCrumbEated = 0;
 	static char board[MAX_HEIGHT][MAX_WIDTH + 2];//+2   '/n' and '/0'
 	int ghost_num = 0;
+	list<string> screenFileNames;
+	list<string>::iterator nextFileName;
 	
 public:
+	string getNextScreenFileName();
 	void getAllScreenFile();
 	// Constructors
 	GameBoard();
@@ -41,19 +45,23 @@ public:
 	void print();
 	static void printScoreToScreen(const int& score);
 	static void printLivesToScreen(const int& lives);
-	int getNumberOfBreadCrumbs() { return numOfBreadCrumbs; }
+	int getSumOfBreadCrumbsInBoard()const { return  sumBreadCrumbsInBoard; }
+	int getSumBreadCrumbEated()const{ return  sumBreadCrumbEated; }
+//	void updateSumBreadCrumbEated() { sumBreadCrumbEated++; }
 	void removeBreadCrumbsInPacmanPos(const Point& pos);
 	static char getCurrBoardChar(int x, int y) { return board[y][x]; }
 	void clearBreadcumbsInBoard(int x, int y);
 	static void clearScreen() { system("cls"); }
-	void resetBoard();
+//	void resetBoard();
 	static int getBoardHeight(){ return height; }
 	static int getBoardWidth() { return width; }
 	void loadBoardFromFile(string fileName);
+	void resetToFirstScreenFileName() { nextFileName = screenFileNames.begin(); }
+	bool isScreenFileNameListEmpty();
 private:
-	int copyLineToRow(const string& src, char* row, int size);
+	unsigned int copyLineToRow(const string& src, char* row, unsigned int size);
 	void clearLegendAera();
 	void saveSpaceLegendFirstLine();
 	void initBoard();
-	void fillBreadCrumbs(bool isGameReset);
+	void fillBreadCrumbs();
 };

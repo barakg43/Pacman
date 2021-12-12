@@ -4,6 +4,7 @@
 #include "Game.h"
 #include "Point.h"
 #include <string.h>
+
 #include <filesystem>
 
 using std::filesystem::directory_iterator;
@@ -42,10 +43,7 @@ char GameBoard::board[MAX_HEIGHT][MAX_WIDTH + 2] = { {BLANK} };
 //	 "############################################     ###############################\n" //19 
 //};
 
-GameBoard::GameBoard() {
-	//fillBreadCrumbs(false);
-	initBoard();
-}
+GameBoard::GameBoard() {}
 void GameBoard::initBoard()
 {
 	for (int row = 0; row < MAX_HEIGHT; row++)
@@ -64,6 +62,20 @@ const Point& GameBoard::getPacmanPos()
 {
 	return pacmanInitPos;
 }
+
+string GameBoard::getNextScreenFileName()
+{
+	string res = *nextFileName;
+	nextFileName++;
+	return res;
+}
+bool GameBoard::isScreenFileNameListEmpty()
+{
+	return nextFileName == screenFileNames.end();
+		
+	
+
+}
 void GameBoard::getGhostsPos(Point*& pos, int& size)
 {
 	pos = ghostsInitPos;
@@ -75,16 +87,15 @@ void GameBoard::getAllScreenFile()
 {
 
 
-	string workingDirectory = std::filesystem::current_path().string();
-	cout << workingDirectory;
+	
+
 	for (const auto& entry : directory_iterator(std::filesystem::current_path()))
 	{
 		string fileExtension = entry.path().filename().extension().string();
-		if(fileExtension==".screen")
-			cout << entry.path().filename().string() << endl;
+		if (fileExtension == SCREEN_FILE_EXT)
+			screenFileNames.push_back(entry.path().filename().string());
+			
 	}
-		
-
 }
 void GameBoard::print()
 {
@@ -130,12 +141,6 @@ void GameBoard::print()
 	
 	if (Game::active_color)
 		setTextColor(Color::LIGHTGREY);
-	/*cout << "pacman pos(" << pacmanInitPos.getX() << ',' << pacmanInitPos.getY() << ')' << endl
-		<< "ghost 1 pos(" << ghostsInitPos[0].getX() << ',' << ghostsInitPos[0].getY() << ')' << endl
-		<< "ghost 2 pos(" << ghostsInitPos[1].getX() << ',' << ghostsInitPos[1].getY() << ')' << endl
-		<< "ghost 3 pos(" << ghostsInitPos[2].getX() << ',' << ghostsInitPos[2].getY() << ')' << endl
-		<< "ghost 4 pos(" << ghostsInitPos[3].getX() << ',' << ghostsInitPos[3].getY() << ')' << endl
-		<< "legend 1 pos(" << legendPos.getX() << ',' << legendPos.getY() << ')' << endl;*/
 	gotoxy(legendPos.getX(), legendPos.getY());
 	cout << "Lives:";
 	gotoxy(legendPos.getX(), legendPos.getY() + 1);
@@ -156,9 +161,6 @@ void GameBoard::clearLegendAera()
 		for (int col = x; col < x+20 &&col<MAX_WIDTH; col++)
 		{
 			board[row][col] = EMPTY;
-				
-			
-
 		}
 
 
@@ -166,41 +168,32 @@ void GameBoard::clearLegendAera()
 
 void GameBoard::loadBoardFromFile(string fileName)
 {
-	getAllScreenFile();
+	
+	ghost_num = 0;
 	width = height = 0;
+	bool firstPacmanPos = true;
+	bool firstLegendPos = true;
+	sumBreadCrumbEated = sumBreadCrumbsInBoard = 0;
 	initBoard();
 	ifstream boardFile(fileName);
-	//print();
+	
 		if (boardFile)
 		{
 			string temp;
 			int row;
 			getline(boardFile, temp);
-			
-			
 			width = copyLineToRow(temp, board[0], MAX_WIDTH);
 			saveSpaceLegendFirstLine();
 			board[0][width] = '\n';
 			board[0][width+1] = '\0';
 			for (row = 1; row < MAX_HEIGHT&& !boardFile.eof(); row++)
-			{
-				
+			{	
 				getline(boardFile, temp);
-				
-				
 				copyLineToRow(temp, board[row], width);
-
-					//board[row][lineLen] = BLANK;
 					board[row][width] = '\n';
 					board[row][width + 1] = '\0';
-				
 			}
 			height = row ;
-			
-			//print();
-
-
-
 
 			for (int row = 0; row < height; row++)
 				for (int col = 0; col < width; col++)
@@ -209,7 +202,11 @@ void GameBoard::loadBoardFromFile(string fileName)
 					switch (board[row][col])
 					{
 					case PACMAN:
-						pacmanInitPos = { col,row };
+						if (firstPacmanPos)
+						{
+							pacmanInitPos = { col,row };
+							firstPacmanPos = false;
+						}
 						board[row][col] = BLANK;
 						break;
 					case GHOST:
@@ -221,7 +218,11 @@ void GameBoard::loadBoardFromFile(string fileName)
 						board[row][col] = BLANK;
 						break;
 					case LEGEND:
-						legendPos = { col,row };
+						if (firstLegendPos) {
+							legendPos = { col,row };
+							firstLegendPos = false;
+						}
+							board[row][col] = BLANK;
 						break;
 					case WALL:;
 					case EMPTY:break;
@@ -234,37 +235,35 @@ void GameBoard::loadBoardFromFile(string fileName)
 
 				}
 		
-//			print();
-			clearLegendAera();
-
-
+			
 			int yLegend = legendPos.getY();
 			/*the legend position in the last 2 board row,increase height of board game*/
-			if (yLegend + 3 > height && yLegend + 3 <= MAX_HEIGHT)
+			if (yLegend + 2 > height )
 			{
-				height = yLegend + 3;
+				if (yLegend + 2 <= MAX_HEIGHT)
+					height = yLegend + 2;
+				else/*for case the legend is in the last row or one before,dont overlap*/
+					height = MAX_HEIGHT;
 				board[yLegend + 1][width] = '\n';
 				board[yLegend + 1][width + 1] = '\0';
 				board[yLegend + 2][width] = '\n';
 				board[yLegend + 2][width + 1] = '\0';
 			}
+			
+
+			clearLegendAera();
+			fillBreadCrumbs();
 		}
 	else
 		cout << "Faild to Open file";
-		//
-		//print();
-		fillBreadCrumbs(false);
-
-		//print();
-	
-		//cout << endl;
+		
 
 
 }
-int GameBoard::copyLineToRow(const string& src, char* row, int size) 
+unsigned int GameBoard::copyLineToRow(const string& src, char* row, unsigned int size)
 {
-	int len;
-	for (len = 0; len < size && len < src.length(); len++)
+	unsigned int len;
+	for (len = 0; len < size && len < (unsigned int)src.length(); len++)
 		row[len] = src[len];
 
 	return len;
@@ -307,18 +306,22 @@ void GameBoard::removeBreadCrumbsInPacmanPos(const Point& pos)
 {
 	int xPos = pos.getX();
 	int yPos = pos.getY();
-	numOfBreadCrumbs--;
-	clearBreadcumbsInBoard(xPos, yPos);
+	sumBreadCrumbsInBoard--;
+	board[yPos][xPos] = BLANK;
 }
 void GameBoard::clearBreadcumbsInBoard(int x, int y)
 {
+	sumBreadCrumbEated++;
 	board[y][x] = BLANK;
 }
-void GameBoard::resetBoard()
-{
-	fillBreadCrumbs(true);
-}
-void GameBoard::fillBreadCrumbs(bool isGameReset)
+
+//void GameBoard::resetBoard()
+//{
+//	//sumBreadCrumbEated = 0;
+//	fillBreadCrumbs();
+//}
+
+void GameBoard::fillBreadCrumbs()
 {
 	for (int row = 1; row < height-1; row++)
 	{
@@ -326,8 +329,7 @@ void GameBoard::fillBreadCrumbs(bool isGameReset)
 			if (board[row][col] == BLANK)
 			{
 				board[row][col] = BREADCRUMBS;
-				if (!isGameReset)//in case the game only reset board,dont increase the number of Bread Crumbs
-					numOfBreadCrumbs++;
+				sumBreadCrumbsInBoard++;
 			}
 	}
 }

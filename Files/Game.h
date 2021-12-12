@@ -10,7 +10,7 @@ class Game
 {
 public:
 	enum DIRECTION { UP, DOWN, LEFT, RIGHT, STAY ,SIZE, NUM_OF_DIRECTION = 4};
-	enum { ALLOW_STAY = 1, ALLOW_TUNNEL = 1, NORMAL_GAME_SPEED = 150, SLOW_GAME_SPEED = 250, FAST_GAME_SPEED = 75 };
+	enum { ALLOW_STAY = 1, ALLOW_TUNNEL = 1, FAST_GAME_SPEED = 75, NORMAL_GAME_SPEED = 150, SLOW_GAME_SPEED = 225 };
 	static bool active_color;
 	enum GHOSTS { MAX_GHOSTS = 4, MOVE_COUNTER_ROUNDS = 10 };//	friend class Pacman;
 private:
@@ -29,7 +29,7 @@ private:
 	int ghostsSize = 0;
 	int gameOption=NOT_INIT;
 	GameMenu gameMenu;
-	void resetGame();
+	bool toRunGame=false;
 public:
 
 	//Constructors
@@ -44,7 +44,7 @@ public:
 
 private://Met
 
-	
+	//void resetCurrGameSession();
 	void getCreaturesInitPos();
 	void checkPacmanHitsGhosts();
 	void moveGhosts();

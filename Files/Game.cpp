@@ -24,7 +24,7 @@ Game::Game() : _moveCounter(MOVE_COUNTER_ROUNDS)
     _arrowKeys[DIRECTION::RIGHT][1] = D; // RIGHT
     _arrowKeys[DIRECTION::STAY][0] = s; // STAY
     _arrowKeys[DIRECTION::STAY][1] = S; // STAY
-    _board.removeBreadCrumbsInPacmanPos(_pacman.getPosition());
+   
     
 
 }
@@ -40,7 +40,8 @@ Game::Game() : _moveCounter(MOVE_COUNTER_ROUNDS)
     _board.printScoreToScreen(_pacman.getScore());
    resetAllCharactersToInitPos();//for first draw
 
-    while (gameMenu.getCurrGameOption() !=gameMenu.OPTION::EXIT&&_pacman.getLives() && _pacman.getScore() < _board.getNumberOfBreadCrumbs())
+
+    while (gameMenu.getCurrGameOption() !=gameMenu.OPTION::EXIT&&_pacman.getLives() && _board.getSumBreadCrumbEated() < _board.getSumOfBreadCrumbsInBoard())//todo:
     {
         if (_kbhit())//user hit a key in key board
         {
@@ -48,7 +49,11 @@ Game::Game() : _moveCounter(MOVE_COUNTER_ROUNDS)
             if (key == ESC)
                 pauseMode(isGamePause);
             else if ((key == 'G' || key == 'g') && isGamePause)//if the game paused and user wants to get out.
-               gameMenu.setGameOption(gameMenu.OPTION::EXIT);
+            {
+                gameMenu.setGameOption(gameMenu.OPTION::EXIT);
+                toRunGame = false;
+                return;
+            }
 
             else
                 tempDir =convertKeyToDirection(key);//convert current key to direction,-1 for invalid key
@@ -86,66 +91,62 @@ Game::Game() : _moveCounter(MOVE_COUNTER_ROUNDS)
         _moveCounter++;
 
     }
-    if (gameMenu.getCurrGameOption() != gameMenu.OPTION::EXIT)
-    {
-        resetGame();
-     
-     
-    }
-       
+    if (_pacman.getLives() == 0)
+        toRunGame = false;
 }
 
-
- void Game::resetGame()
- {
-
-
-     resetAllCharactersToInitPos();
-     _board.clearScreen();
-     gameMenu.gameEnd(_pacman.getLives());
-     _moveCounter = MOVE_COUNTER_ROUNDS;
-     _pacman.resetPacmanData();
-     _board.resetBoard();
-}
+//
+// void Game::resetCurrGameSession()
+// {
+//
+//
+//     resetAllCharactersToInitPos();
+//     _board.clearScreen();
+//   
+//     _moveCounter = MOVE_COUNTER_ROUNDS;
+//     _pacman.resetPacmanData();
+//    
+//     _board.resetBoard();
+//}
  void Game::getCreaturesInitPos()
  {
-     Point* ghostTemp;
+     Point* ghostsTemp;//pointer to static array,no need to release
     
      
-     _board.getGhostsPos(ghostTemp, ghostsSize);
+     _board.getGhostsPos(ghostsTemp, ghostsSize);
      PACMAN_START_POS = _board.getPacmanPos();
-
+     _board.removeBreadCrumbsInPacmanPos(PACMAN_START_POS);
      for (int i = 0; i < ghostsSize; i++)
-         GHOSTS_START_POS[i] = ghostTemp[i];
+         GHOSTS_START_POS[i] = ghostsTemp[i];
      
-     /*cout << "pacman pos(" << PACMAN_START_POS.getX() << ',' << PACMAN_START_POS.getY() << ')' << endl
-        << "ghost 1 pos(" << GHOSTS_START_POS[0].getX() << ',' << GHOSTS_START_POS[0].getY() << ')' << endl
-        << "ghost 2 pos(" << GHOSTS_START_POS[1].getX() << ',' << GHOSTS_START_POS[1].getY() << ')' << endl
-        << "ghost 3 pos(" << GHOSTS_START_POS[2].getX() << ',' << GHOSTS_START_POS[2].getY() << ')' << endl
-        << "ghost 4 pos(" << GHOSTS_START_POS[3].getX() << ',' << GHOSTS_START_POS[3].getY() << ')' << endl;*/
-
  }
 void Game::start() { 
+    _board.getAllScreenFile();
+        while (gameMenu.getCurrGameOption() != gameMenu.OPTION::EXIT)
+        {
+            _board.resetToFirstScreenFileName();
+             toRunGame = false;
+            gameMenu.Print(toRunGame);
+
+            while (toRunGame&&!_board.isScreenFileNameListEmpty())
+            {
+                _board.loadBoardFromFile(_board.getNextScreenFileName());
+     
+                getCreaturesInitPos();
+            
+                gameLoop();
+           }
+      
+            if (gameMenu.getCurrGameOption() != gameMenu.OPTION::EXIT)
+            {
+                gameMenu.gameEnd(_pacman.getLives());
+                _moveCounter = MOVE_COUNTER_ROUNDS;
+                _pacman.resetPacmanData();
+               //_board.resetBoard();
+            }
+        }
    
-
-
-    _board.loadBoardFromFile("BoardTest.screen");//"BoardTest.txt"
-    getCreaturesInitPos();
-    while (gameMenu.getCurrGameOption() != gameMenu.OPTION::EXIT)
-    {
-        bool toRunGame = false;
-
-        gameMenu.Print(toRunGame);
-        if (toRunGame)
-            gameLoop();
-
-        _moveCounter = MOVE_COUNTER_ROUNDS;
-
-        _pacman.resetPacmanData();
-        _board.resetBoard();
-
-    }
-
+    
 }
 
 
@@ -236,30 +237,30 @@ bool Game::isValidDirection(int key, const Point& currPos, bool allowedTunnel, b
     GameBoard tmpBoard = _board;
     if ((key ==UP && (_board.getCurrBoardChar(xPos, yPos - 1) != GameBoard::WALL)))
     {
-        if (allowedTunnel)
+        if (yPos - 1 > 0)
             return true;
-        else if (yPos - 1 > 0)
+        else if (allowedTunnel&& (_board.getCurrBoardChar(xPos, _board.getBoardHeight()-1) != GameBoard::WALL))
             return true;
     }
     else if (key == DOWN && (_board.getCurrBoardChar(xPos, yPos + 1) != GameBoard::WALL))
     {
-        if (allowedTunnel)
+        if (yPos + 1 < _board.getBoardHeight() - 1)
             return true;
-        else if (yPos + 1 < _board.getBoardHeight() - 1)
+        else if (allowedTunnel && (_board.getCurrBoardChar(xPos, 0) != GameBoard::WALL))
             return true;
     }
     else if (key == LEFT && (_board.getCurrBoardChar(xPos - 1, yPos) != GameBoard::WALL))
     {
-        if (allowedTunnel)
+        if (xPos - 1 > 0)
             return true;
-        else if (xPos - 1 > 0)
+        else if (allowedTunnel && (_board.getCurrBoardChar(_board.getBoardWidth()-1, yPos) != GameBoard::WALL))
             return true;
     }
-    else if (key == RIGHT && (_board.getCurrBoardChar(xPos + 1, yPos) != GameBoard::WALL))
+    else if (key == RIGHT && (_board.getCurrBoardChar(xPos+1, yPos) != GameBoard::WALL))
     {
-        if (allowedTunnel)
+        if (xPos + 1 < _board.getBoardWidth() - 1) 
             return true;
-        else if (xPos + 1 < _board.getBoardWidth() - 1)
+        else if (allowedTunnel&& (_board.getCurrBoardChar(0, yPos) != GameBoard::WALL))
             return true;
 
     }
@@ -270,10 +271,10 @@ bool Game::isValidDirection(int key, const Point& currPos, bool allowedTunnel, b
 }
 int Game::convertKeyToDirection(char key)
 {
-    for (int i = 0; i < DIRECTION::SIZE; i++)
+    for (int dir = 0; dir < DIRECTION::SIZE; dir++)
     {
-        if (key == _arrowKeys[i][0] || key == _arrowKeys[i][1])
-            return i;
+        if (key == _arrowKeys[dir][0] || key == _arrowKeys[dir][1])
+            return dir;
     }
     return NOT_INIT;
 }
@@ -288,119 +289,3 @@ void Game::setGameSpeed(int speed)
 
 
 
-
-//void Game::gameMenu()
-//{
-//    
-//    gameOption = NOT_INIT;
-//
-//    while (gameOption ==OPTION::NOT_INIT)
-//    {
-//
-//        GameBoard::clearScreen();
-//
-//        gameOption = getGameMenuOptionFromUser();
-//        switch (gameOption)
-//        {
-//        case OPTION::START:
-//           gameLoop();
-//            break;
-//        case OPTION::WITH_COLORS:
-//            active_color = true;
-//            gameLoop();
-//            break;
-//        case OPTION::CHANGE_GAME_SPEED:
-//            gameSpeedMenu();
-//            break;
-//        case OPTION::HOW_TO_PLAY:
-//            howToPlay();
-//            break;
-//        case OPTION::EXIT:
-//            break;
-//
-//        default:;
-//        }
-//        if (gameOption != OPTION::EXIT)
-//            gameOption = OPTION::NOT_INIT;//for reset game menu
-//    }
-////}
-//int  Game::getGameMenuOptionFromUser()
-//{
-//    char userChoice = NOT_INIT;
-//    cout << "#############################\n"
-//        << "#1  -Start The Game         #\n"
-//        << "#2  -Start with colors      #\n"
-//        << "#3  -Change game speed      #\n"
-//        << "#8  -How To Play            #\n"
-//        << "#9  -Exit                   #\n"
-//        << "#############################\n";
-//
-//    userChoice = _getch();
-//
-//
-//    while ((userChoice > '9' || userChoice < '8') && (userChoice < '1' || userChoice>'3'))
-//    {
-//        gotoxy(5, 10);
-//        clog << "Not valid game menu option\nPlease enter number between 1,2,3,8 or 9" << endl;
-//        gotoxy(0, 0);
-//        userChoice = _getch();
-//    }
-//
-//
-//
-//    if (Game::active_color)
-//        setTextColor(Color::YELLOW);
-//    GameBoard::clearScreen();
-//    cout << " __   _     __       _  _     _    _                " << endl;
-//    cout << "|__) /_\\   /    __  / \\/ \\   /_\\  | \\ |        " << endl;
-//    cout << "|   /   \\  \\__     /      \\ /   \\ |  \\|        " << endl << endl;
-//    if (Game::active_color)
-//        setTextColor(Color::LIGHTGREY);
-//
-//    Sleep(500);
-//
-//
-//
-//    return userChoice - '0';
-//}
-//void Game::howToPlay()
-//{
-//    GameBoard::clearScreen();
-//    cout << "the pacman(@ in screen) need to eat all the breadcrumbs \n"
-//        << "in the board without touching the ghost($ in screen)\n"
-//        << "the pacman will continue moving until you hit:\n"
-//        << "W-for go UP\nA-for go LEFT\nD-for go RIGHT\nX-for go DOWN\nS-to stay in position"
-//        << "\n\n\npress any key to return game menu" << endl;
-//    while (!_kbhit()) {}//wait for user input
-//    char temp = _getch();//clean buffer
-//}
-//void Game::gameSpeedMenu()
-//{
-//    GameBoard::clearScreen();
-//    cout << "#1 FAST SPEED" << endl
-//        << "#2 REGULAR SPEED" << endl
-//        << "#3 SLOW SPEED" << endl;
-//    char userChoice = Game::NOT_INIT;
-//    do
-//    {
-//        userChoice = _getch();
-//        gotoxy(5, 10);
-//        clog << "Not valid speed option\nPlease enter number between 1,2,3" << endl;
-//        gotoxy(0, 0);
-//    } while (userChoice < '1' || userChoice>'3');
-//    switch (userChoice)
-//    {
-//    case FAST:
-//       gameSpeed=FAST_GAME_SPEED;
-//        break;
-//    case NORMAL:
-//        gameSpeed=NORMAL_GAME_SPEED;
-//        break;
-//        break;
-//    case SLOW:
-//        gameSpeed = SLOW_GAME_SPEED;
-//        break;
-//    default:;
-//    }
-//
-//}

@@ -23,6 +23,7 @@ public:
 	const Point& getPosition();
 	const int& getLives() const;
 	const int& getScore() const;
+
 	// Setters
 	void setPosition(const Point& pos);
 	int getAndUpdateLife() { return --_lives; }

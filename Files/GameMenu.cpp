@@ -12,7 +12,8 @@ void GameMenu::Print(bool& runGame)
 {
 
   
-
+    while (!runGame)
+    {
         GameBoard::clearScreen();
 
         gameOption = getGameMenuOptionFromUser();
@@ -22,8 +23,8 @@ void GameMenu::Print(bool& runGame)
             runGame = true;
             break;
         case OPTION::WITH_COLORS:
-             Game::active_color = true;
-             runGame = true;
+            Game::active_color = true;
+            runGame = true;
             break;
         case OPTION::CHANGE_GAME_SPEED:
             gameSpeedMenu();
@@ -32,12 +33,16 @@ void GameMenu::Print(bool& runGame)
             howToPlay();
             break;
         case OPTION::EXIT:
+            return;
             break;
 
-        default:;
+        default: break;
         }
-        if (gameOption != OPTION::EXIT)
-            gameOption = OPTION::NOT_INIT;//for reset game menu
+
+        //if (gameOption != OPTION::EXIT)
+        //    gameOption = OPTION::NOT_INIT;//for reset game menu
+    }
+   
     
 }
 int  GameMenu::getGameMenuOptionFromUser()
@@ -118,18 +123,17 @@ void GameMenu::gameSpeedMenu()
     case NORMAL:
         Game::setGameSpeed(Game::NORMAL_GAME_SPEED);
         break;
-        break;
     case SLOW:
         Game::setGameSpeed(Game::SLOW_GAME_SPEED);
         break;
-    default:;
+    default:break;
     }
 
 }
 
 void GameMenu::gameEnd(int lives_pac)
 {
-
+    GameBoard::clearScreen();
     if (lives_pac == 0)
     {
         //if game is with colors, we change the gameover text to red and then return it to whitegrey
@@ -143,6 +147,7 @@ void GameMenu::gameEnd(int lives_pac)
             << " ##    ##   #########  ##     ##  ##           ##     ##   ##   ##   ##        ##   ##        \n"
             << " ##    ##   ##     ##  ##     ##  ##           ##     ##    ## ##    ##        ##    ##   ####\n"
             << "  ######    ##     ##  ##     ##  ########      #######      ###     ########  ##     ##  ####   "<< endl;
+       
     }
     else//you won the game
     {

@@ -1,0 +1,35 @@
+legend:
+----directions----
+'U'=Up
+'D'=Down
+'R'=Right
+'L'=Left
+'S'=Stay
+'N'=no initiate any direction(only for pacman)
+
+'d'=not set any direction(for fruit and ghosts)
+
+Pac:_ is the current direction of the pacman
+
+Fru:(fruit)
+app=_ is fruit is on screen or not -'t'=true, 'f'=false 
+fig=_ is the figure of the fruit ,can be '5' to '9'
+x=__ x of the start position for the fruit 
+y=__ y of the start position for the fruit 
+the coordinates must be 2 digit number,for number <10 add zero before (09,00,05,02...)
+dir=_ current direction of the fruit
+
+G1:_ current direction of the ghost 1
+G2:_ current direction of the ghost 2
+G2:_ current direction of the ghost 2
+G2:_ current direction of the ghost 2
+
+-----format example 1----
+Pac:U Fru:app=t fig=7 x=12 y=08 dir=d G1:d G2:d G3:d G4:d ;
+
+pacman go UP,fruit is on screen with figure '7' and start position (12,8) without any direction
+G1 to G4 not set any direction
+
+-----format example 2----
+Pac:L Fru:app=f fig=F x=XX y=YY dir=d G1:R G2:D G3:d G4:d ;
+pacman go LEFT,fruit isn't on screen ,ghost 1 go RIGHT,ghost 2 go DOWN
